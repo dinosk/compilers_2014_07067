@@ -43,6 +43,7 @@ public class LivenessVisitor implements GJVisitor<String, String> {
     this.interferenceMap = new HashMap<String, HashMap<String, HashSet<String>>>();
     this.spillCosts = new HashMap<String, Integer>();
     this.methodInstructions = new HashMap<String, ArrayList<Instruction>>();
+    
     this.argList = new ArrayList<String>();
   }
 
@@ -77,8 +78,8 @@ public class LivenessVisitor implements GJVisitor<String, String> {
     return spillStack;
   }
 
-  public ArrayList<Instruction> getCFG(){
-    return instructions;
+  public HashMap<String, ArrayList<Instruction>> getCFG(){
+    return methodInstructions;
   }
 
   public HashMap<String, HashMap<String, HashSet<String>>> getInterferenceMap(){
@@ -192,16 +193,6 @@ public class LivenessVisitor implements GJVisitor<String, String> {
               i.getSucc().add(succI);
         }        
       }
-
-      // edw checkarw an oi instructions tis MAIN exun swstous successors
-      // for(Instruction inst2 : methodInstructions.get("MAIN")){
-      //   System.out.println(inst2.getInstruction()+" succ:");
-      //   for(Instruction successor : inst2.getSucc()){  
-      //     System.out.println(successor.getInstruction());
-      //   }
-      //   try{System.in.read();}
-      //   catch(Exception e){}
-      // }
       
       System.out.println("calculating in and out sets");
       // loop to calculate in and out sets
@@ -230,34 +221,11 @@ public class LivenessVisitor implements GJVisitor<String, String> {
         }
       }
 
-      System.out.println("before prints");
-
-      // for(Instruction inst2 : methodInstructions.get("LS_Start")){
-      //   System.out.println("in["+inst2.getId()+"]"+inst2.getIn());
-      //   System.out.println("i"+inst2.getId()+": "+inst2.getInstruction());
-      //   System.out.println("out["+inst2.getId()+"]"+inst2.getOut()+"\n");
-      // }
-
-      System.out.println("after prints");
-      // printing out the final live sets
-      // for(String method : methodInstructions.keySet()){
-        // System.out.println("\n\n"+method+"'s instructions:");
-        // for(Instruction inst : methodInstructions.get(method)){
-          // System.out.println("in["+inst.getId()+"]"+inst.getIn());
-          // System.out.println("i"+inst.getId()+": "+inst.getInstruction()+" is "+inst.getType());
-          // System.out.println("out["+inst.getId()+"]"+inst.getOut()+"\n");
-        // }
-      // }
-      // System.out.println("-------------------------------\n\n\n");
-
-
-      System.out.println("constructing interference map");
       // loops to calculate the interference map       
       for(String method : methodInstructions.keySet()){
         instructions = methodInstructions.get(method);
         HashSet<String> toAdd;
         interferenceMap.put(method, new HashMap<String, HashSet<String>>());
-        System.out.println("start");
         i = instructions.get(0);
         Iterator iter = i.getIn().iterator();
         String tempIN;
@@ -271,7 +239,6 @@ public class LivenessVisitor implements GJVisitor<String, String> {
           else
             interferenceMap.get(method).get(tempIN).addAll(toAdd);
         }
-        System.out.println("~");
         // loop for out sets 
         String temp;
         Iterator instructionIter = instructions.iterator();
@@ -288,7 +255,6 @@ public class LivenessVisitor implements GJVisitor<String, String> {
             else
               interferenceMap.get(method).get(temp).addAll(toAdd);
           }
-          System.out.println("!");
           iter = i.getIn().iterator();
           while(iter.hasNext()){
             temp = String.valueOf(iter.next());
@@ -300,7 +266,6 @@ public class LivenessVisitor implements GJVisitor<String, String> {
             else
               interferenceMap.get(method).get(temp).addAll(toAdd);
           }
-          System.out.println("@");
         }
       }
 
@@ -309,12 +274,7 @@ public class LivenessVisitor implements GJVisitor<String, String> {
         // System.out.println(method2+"'s interferenceMap:");
         for(String temp2 : interferenceMap.get("MAIN").keySet())
           System.out.println(temp2+": "+interferenceMap.get("MAIN").get(temp2));
-        try{
-          System.in.read();
-        }
-        catch(Exception e){
-
-        }
+        
       // }
       return _ret;
    }

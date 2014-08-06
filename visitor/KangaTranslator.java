@@ -16,11 +16,13 @@ public class KangaTranslator implements GJVisitor<String, String> {
   HashMap<String, HashMap<String, HashSet<String>>> interferenceMap;
   HashMap<String, HashMap<String, String>> registerMap;
   HashMap<String, Stack<String>> spillStack;
-  ArrayList<Instruction> cfg;
+  HashMap<String, ArrayList<Instruction>> cfg;
   HashMap<String, Instruction> labelInstructions;
   Stack<HashMap<String, String>> frameStack;
   Stack<Integer> curTop;
+  ArrayList<String> orderOfProcs;
   // Stack<ArrayList<String>> frameStack2;
+  HashMap<String, Integer> stackLocations;
   HashSet<String> sRegs;
   HashSet<String> argRegs;
   ArrayList<String> argList;
@@ -33,14 +35,14 @@ public class KangaTranslator implements GJVisitor<String, String> {
   int stackTop;
 
   public KangaTranslator(HashMap<String, HashMap<String, ArrayList<String>>> procStats, HashMap<String, HashMap<String, String>> registerMap,
-                         HashMap<String, Stack<String>> spillStack, ArrayList<Instruction> cfg, HashMap<String, HashMap<String, HashSet<String>>> interferenceMap, HashMap<String, Instruction> labelInstructions, BufferedWriter out){
+                         HashMap<String, Stack<String>> spillStack, HashMap<String, ArrayList<Instruction>> cfg, HashMap<String, HashMap<String, HashSet<String>>> interferenceMap, HashMap<String, Instruction> labelInstructions, ArrayList<String> orderOfProcs, BufferedWriter out){
     this.procStats = procStats;
     this.registerMap = registerMap;
     this.spillStack = spillStack;
     this.cfg = cfg;
     this.interferenceMap = interferenceMap;
     this.labelInstructions = labelInstructions;
-
+    this.orderOfProcs = orderOfProcs;
     List<String> regs = Arrays.asList("s0", "s1", "s2", "s3", "s4", "s5", "s6", "s7");
     this.sRegs = new HashSet<String>(regs);
     regs = Arrays.asList("a0", "a1", "a2", "a3");
@@ -50,6 +52,7 @@ public class KangaTranslator implements GJVisitor<String, String> {
     this.out = out;
     this.code = "";
     this.iCounter = 0;
+    this.stackLocations = new HashMap<String, Integer>();
   }
 
   public void emit(String code){
@@ -68,8 +71,17 @@ public class KangaTranslator implements GJVisitor<String, String> {
     return -1;
   }
 
+  public Instruction getInstructionByText(String text){
+    for(Instruction i : cfg.get(curProcedure)){
+      if(i.getInstruction().equals(text))
+        return i;
+    }
+    return null;
+  }
+
   public Instruction getInstructionById(int id){
-    for(Instruction i : cfg){
+    for(Instruction i : cfg.get(curProcedure)){
+      System.out.println(i.getId());
       if(i.getId() == id)
         return i;
     }
@@ -208,6 +220,41 @@ public class KangaTranslator implements GJVisitor<String, String> {
    public String visit(Goal n, String argu) {
       String _ret=null;
 
+      // for(String proc : orderOfProcs){
+      //   System.out.println("in cfg's proc: "+proc);
+      //   for(Instruction i : cfg.get(proc)){
+      //     System.out.println(i.getInstruction());
+
+      //   }
+      //   try{System.in.read();}
+      //   catch(Exception e){}
+      // }
+
+      for(String method : cfg.keySet()){
+        Integer curCallStackLocs = new Integer(0);
+        Integer stackLoc = new Integer(0);
+        for(Instruction inst : cfg.get(method)){
+          if(inst.getInstruction().contains("CALL")){
+            for(String liveTTemp : inst.getOut()){
+              String reg = registerMap.get(method).get(liveTTemp);
+              System.out.println(reg+" = reg");
+              if(reg.contains("t")){
+                curCallStackLocs++;
+              }
+            }
+            if(stackLoc < curCallStackLocs){
+              System.out.println("found a bigger call");
+              stackLoc = curCallStackLocs;
+            }
+            curCallStackLocs = 0;
+          }
+        }
+        stackLocations.put(method, stackLoc);
+      }
+      System.out.println(stackLocations);
+      try{System.in.read();}
+      catch(Exception e){}
+
       curProcedure = "MAIN";
       n.f0.accept(this, argu);
       emit("MAIN\t[0][0]["+procStats.get(curProcedure).get("tempArgs").size()+"]\n");
@@ -259,7 +306,6 @@ public class KangaTranslator implements GJVisitor<String, String> {
           stackPlaces+=1;
         }
       }
-      System.out.println("stackPlaces: "+stackPlaces+"!");
       curTop.push(stackPlaces);
       getNextStackTop();
 
@@ -499,8 +545,9 @@ public class KangaTranslator implements GJVisitor<String, String> {
     */
    public String visit(Call n, String argu) {
       String _ret=null;
-      Instruction instruction = getInstructionById(iCounter);
+      // Instruction instruction = getInstructionById(iCounter);
       HashSet<String> callOut = new HashSet<String>();
+
 
       n.f0.accept(this, argu);
       argList = new ArrayList<String>();
@@ -519,8 +566,8 @@ public class KangaTranslator implements GJVisitor<String, String> {
 
         System.out.println("argument: "+arg+" gets assigned to: "+reg);
         System.out.println(i);
-        try{System.in.read();}
-        catch(Exception e){}
+        // try{System.in.read();}
+        // catch(Exception e){}
 
         if(reg == null){
           emit("ALOAD v1 SPILLEDARG "+getSpillIndex(arg));
@@ -539,8 +586,31 @@ public class KangaTranslator implements GJVisitor<String, String> {
         }
         i++;
       }
+      System.out.println(iCounter);
+      // Instruction instruction = getInstructionByText("CALL "+simpleExp+"\n");
+      Instruction instruction = getInstructionById(iCounter);
+      System.out.println(instruction);
+      callOut = instruction.getOut();
+      // Stack<String> tempStack = new Stack<String>();
+      
+      for(String liveTTemp : callOut){
+        if(registerMap.get(curProcedure).get(liveTTemp).contains("t")){
+          System.out.println(registerMap.get(curProcedure).get(liveTTemp)+" needs to be saved");
+          emit("\tASTORE SPILLEDARG "+getNextStackPos()+" "+registerMap.get(curProcedure).get(liveTTemp)+"\n");
+        }
+      }
+        // System.out.println(callOut);
+        // try{System.in.read();}
+        // catch(Exception e){}
       emit("\tCALL "+simpleExp+"\n");
-
+      
+      for(String liveTTemp : callOut){
+        if(registerMap.get(curProcedure).get(liveTTemp).contains("t")){
+          emit("\tALOAD v1 SPILLEDARG "+stackTop+"\n");
+          emit("\tMOVE "+registerMap.get(curProcedure).get(liveTTemp)+" v1"+"\n");
+          stackTop--;
+        }
+      }
       n.f4.accept(this, argu);
       return "v0";
    }

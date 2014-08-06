@@ -22,7 +22,8 @@ public class Main {
         HashMap<String, HashMap<String, String>> registerMap;
         HashMap<String, Instruction> labelInstructions;
         HashMap<String, Stack<String>> spillStack;
-        ArrayList<Instruction> cfg;
+        HashMap<String, ArrayList<Instruction>> cfg;
+        ArrayList<String> orderOfProcs;
         for(String filename : args){
             try{
                 File file = new File(filename+".kg");
@@ -44,6 +45,8 @@ public class Main {
                 System.out.println("Got the stats!");
                 root.accept( sc, filename);
                 procStats = sc.getStats();
+                orderOfProcs = sc.getOrder();
+                System.out.println(orderOfProcs);
                 // System.out.println(procStats.keySet());
                 // for(String procName : procStats.keySet()){
                 //     System.out.println(procName+":\n------------------------------------");
@@ -65,10 +68,12 @@ public class Main {
                 cfg = liveVisitor.getCFG();
                 interferenceMap = liveVisitor.getInterferenceMap();
                 labelInstructions = liveVisitor.getLabelInstructions();
+
+                
                 // System.out.println("FINAL interferenceMap: "+interferenceMap);
 
 
-                root.accept( new KangaTranslator(procStats, registerMap, spillStack, cfg, interferenceMap, labelInstructions, out), filename );
+                root.accept( new KangaTranslator(procStats, registerMap, spillStack, cfg, interferenceMap, labelInstructions, orderOfProcs, out), filename );
                 // for(String procName : tempCount.keySet()){
                     // System.out.println(procName+" max: "+tempCount.get(procName));
                 // }

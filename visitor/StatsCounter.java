@@ -13,6 +13,7 @@ import java.util.*;
 public class StatsCounter implements GJVisitor<String, String> {
   HashMap<String, HashMap<String, ArrayList<String>>> procStats; 
   HashMap<String, ArrayList<String>> statsMap;
+  ArrayList<String> orderOfProcs;
   ArrayList<String> argList;
   ArrayList<String> maxArgs;
   ArrayList<String> tempList;
@@ -25,6 +26,7 @@ public class StatsCounter implements GJVisitor<String, String> {
     this.tempList = new ArrayList<String>();
     this.argList = new ArrayList<String>();
     this.maxArgs = new ArrayList<String>();
+    this.orderOfProcs = new ArrayList<String>();
     curProcedure = "MAIN";
   }
 
@@ -39,6 +41,10 @@ public class StatsCounter implements GJVisitor<String, String> {
 
   public HashMap<String, HashMap<String, ArrayList<String>>> getStats(){
     return procStats;
+  }
+
+  public ArrayList<String> getOrder(){
+    return orderOfProcs;
   }
    //
    // Auto class visitors--probably don't need to be overridden.
@@ -106,6 +112,7 @@ public class StatsCounter implements GJVisitor<String, String> {
    public String visit(Goal n, String argu) {
       String _ret=null;
       maxArgs.add("0");
+      orderOfProcs.add("MAIN");
       n.f0.accept(this, argu);
       n.f1.accept(this, argu);
       n.f2.accept(this, argu);
@@ -142,6 +149,7 @@ public class StatsCounter implements GJVisitor<String, String> {
    public String visit(Procedure n, String argu) {
       String _ret=null;
       String name = n.f0.accept(this, argu);
+      orderOfProcs.add(name);
       System.out.println("in Procedure: "+name);
       
       curProcedure = name;
