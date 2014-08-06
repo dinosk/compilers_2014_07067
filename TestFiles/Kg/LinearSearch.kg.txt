@@ -43,13 +43,13 @@ LS_Start [2][2][2]
        MOVE a1 s1
        CALL t2
        MOVE t1 v0
-              MOVE t0 s0
+       MOVE t0 s0
        HLOAD t1 t0 0
        HLOAD t2 t1 4
        MOVE a0 t0
        CALL t2
        MOVE t1 v0
-              MOVE t0 9999
+       MOVE t0 9999
        PRINT t0
        MOVE t0 s0
        HLOAD t1 t0 0
