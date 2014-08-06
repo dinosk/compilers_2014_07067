@@ -180,6 +180,7 @@ LS_Init [2][2][0]
        ASTORE SPILLEDARG 1 s1
        MOVE s0 a0
        MOVE s1 a1
+       PRINT s1
        HSTORE s0 8 s1
        MOVE t0 PLUS s1 1
        MOVE t1 4

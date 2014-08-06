@@ -254,10 +254,6 @@ public class LivenessVisitor implements GJVisitor<String, String> {
         HashSet<String> toAdd;
         interferenceMap.put(method, new HashMap<String, HashSet<String>>());
 
-        // special loop for in set of first instruction
-        // the idea is that we calculate the IN set of each first Instruction and
-        // then we can get the remaining only from the OUT sets of the successors
-
         i = instructions.get(0);
         Iterator iter = i.getIn().iterator();
         String tempIN;
@@ -288,14 +284,27 @@ public class LivenessVisitor implements GJVisitor<String, String> {
             else
               interferenceMap.get(method).get(temp).addAll(toAdd);
           }
+          
+          iter = i.getIn().iterator();
+          while(iter.hasNext()){
+            temp = String.valueOf(iter.next());
+            toAdd = new HashSet<String>(i.getOut());
+            toAdd.addAll(new HashSet<String>(i.getIn()));
+            toAdd.remove(temp);
+            if(interferenceMap.get(method).get(temp) == null)
+              interferenceMap.get(method).put(temp, toAdd);
+            else
+              interferenceMap.get(method).get(temp).addAll(toAdd);
+          }
+
         }
       }
 
       // printing the final interference maps
       // for(String method2 : interferenceMap.keySet()){
         // System.out.println(method2+"'s interferenceMap:");
-        for(String temp2 : interferenceMap.get("LS_Start").keySet())
-          System.out.println(temp2+": "+interferenceMap.get("LS_Start").get(temp2));
+        for(String temp2 : interferenceMap.get("MAIN").keySet())
+          System.out.println(temp2+": "+interferenceMap.get("MAIN").get(temp2));
         try{
           System.in.read();
         }
