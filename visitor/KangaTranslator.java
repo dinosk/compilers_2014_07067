@@ -18,8 +18,9 @@ public class KangaTranslator implements GJVisitor<String, String> {
   HashMap<String, Stack<String>> spillStack;
   ArrayList<Instruction> cfg;
   HashMap<String, Instruction> labelInstructions;
-  Stack<String> theStack;
-  Stack<ArrayList<String>> theStack2;
+  Stack<HashMap<String, String>> frameStack;
+  Stack<Integer> curTop;
+  // Stack<ArrayList<String>> frameStack2;
   HashSet<String> sRegs;
   HashSet<String> argRegs;
   ArrayList<String> argList;
@@ -29,6 +30,7 @@ public class KangaTranslator implements GJVisitor<String, String> {
   String code;
   String curProcedure;
   int iCounter;
+  int stackTop;
 
   public KangaTranslator(HashMap<String, HashMap<String, ArrayList<String>>> procStats, HashMap<String, HashMap<String, String>> registerMap,
                          HashMap<String, Stack<String>> spillStack, ArrayList<Instruction> cfg, HashMap<String, HashMap<String, HashSet<String>>> interferenceMap, HashMap<String, Instruction> labelInstructions, BufferedWriter out){
@@ -43,7 +45,8 @@ public class KangaTranslator implements GJVisitor<String, String> {
     this.sRegs = new HashSet<String>(regs);
     regs = Arrays.asList("a0", "a1", "a2", "a3");
     this.argRegs = new HashSet<String>(regs);
-    this.theStack = new Stack<String>();
+    this.frameStack = new Stack<HashMap<String, String>>();
+    this.curTop = new Stack<Integer>();
     this.out = out;
     this.code = "";
     this.iCounter = 0;
@@ -55,12 +58,13 @@ public class KangaTranslator implements GJVisitor<String, String> {
 
   public int getSpillIndex(String temp){
     int index = 0;
-    for(String spilledTemp : theStack){
-      if(spilledTemp.equals(temp)){
-        return index;
-      }
-      index++;
-    }
+
+    // for(String spilledTemp : frameStack.get(curProcedure)){
+    //   if(spilledTemp.equals(temp)){
+    //     return index;
+    //   }
+    //   index++;
+    // }
     return -1;
   }
 
@@ -105,8 +109,17 @@ public class KangaTranslator implements GJVisitor<String, String> {
       return null;
   }
 
+  public void getNextStackTop(){
+    int stackSize=0;
+    for(Integer stackPlaces : curTop){
+      stackSize+= stackPlaces;
+    }
+    stackTop = stackSize-1;
+  }
+
   public int getNextStackPos(){
-    return theStack.size();
+    stackTop++;
+    return stackTop;
   }
 
   public ArrayList<String> findSRegs(String method){
@@ -234,12 +247,25 @@ public class KangaTranslator implements GJVisitor<String, String> {
    public String visit(Procedure n, String argu) {
       String _ret=null;
       String name = n.f0.accept(this, argu);
+      curProcedure = name;
       System.out.println("-------------------------in Procedure: "+name);
+      System.out.println("with registerMap: "+registerMap.get(name));
+
+      Integer stackPlaces = new Integer(0);
+      frameStack.push(registerMap.get(name));
+      for(String passargTemp : registerMap.get(name).keySet()){
+        System.out.println(registerMap.get(name).get(passargTemp));
+        if(registerMap.get(name).get(passargTemp).contains("PASSARG")){
+          stackPlaces+=1;
+        }
+      }
+      System.out.println("stackPlaces: "+stackPlaces+"!");
+      curTop.push(stackPlaces);
+      getNextStackTop();
 
       int startingPoint;
       String sReg;
       int i;
-      curProcedure = name;
       protectedSRegs = new ArrayList<String>();
 
       n.f1.accept(this, argu);
@@ -255,14 +281,15 @@ public class KangaTranslator implements GJVisitor<String, String> {
 
       // protects s regs that are going to be overwritten
       for( i=0; i<Integer.parseInt(procStats.get(curProcedure).get("argsNo").get(0)); i++ ){
-        emit("\tASTORE SPILLEDARG "+getNextStackPos()+" s"+i+"\n");
-        protectedSRegs.add("SPILLEDARG "+getNextStackPos());
-        theStack.push("s"+i);
+        int stackPos = getNextStackPos();
+        emit("\tASTORE SPILLEDARG "+stackPos+" s"+i+"\n");
+        protectedSRegs.add("SPILLEDARG "+stackPos);
+        // frameStack.push("s"+i);
         if(i==3)
           break;
       }
 
-      theStack.clear();
+      // frameStack.clear();
 
       // saves arguments to s regs
       for( i=0; i<Integer.parseInt(procStats.get(curProcedure).get("argsNo").get(0)); i++ ){
@@ -281,7 +308,8 @@ public class KangaTranslator implements GJVisitor<String, String> {
       }
 
       emit("END\n");
-
+      frameStack.pop();
+      curTop.pop();
       return _ret;
    }
 
@@ -473,44 +501,27 @@ public class KangaTranslator implements GJVisitor<String, String> {
       String _ret=null;
       Instruction instruction = getInstructionById(iCounter);
       HashSet<String> callOut = new HashSet<String>();
-      // if(instruction != null){
-      //   System.out.println(instruction.getInstruction());
-      //   System.out.println("CALL's in: "+instruction.getIn());
-      //   System.out.println("CALL's out: "+instruction.getOut());
-      //   callOut = instruction.getOut();
-      // }
 
       n.f0.accept(this, argu);
       argList = new ArrayList<String>();
       int i = 0;
-      System.out.println(curProcedure+"'s arguments: "+procStats.get(curProcedure).get("tempArgs"));
-      // for(String arg : procStats.get(curProcedure).get("tempArgs")){
-      //   String reg = registerMap.get(curProcedure).get(arg);
-      //   if(reg == null){
-      //     emit("ALOAD v1 SPILLEDARG "+getSpillIndex(arg));
-      //     reg = "v1";
-      //   }
-      //   else if(reg.contains("PASSARG")){
-      //     int spilledArgNo = Integer.parseInt(reg.substring(reg.length()-1, reg.length()));
-      //     emit("\tALOAD v1 SPILLEDARG "+(spilledArgNo-1)+"\n");
-      //     reg = "v1";
-      //   }
-      //   if(i < 4)
-      //     emit("\tMOVE a"+i+" "+reg+"\n");
-      //   else{
-      //     emit("\tPASSARG "+(i-3)+" "+reg+"\n");
-      //     theStack.push(reg);
-      //   }
-      //   i++;
-      // }
+      // System.out.println(curProcedure+"'s arguments: "+procStats.get(curProcedure).get("tempArgs"));
 
       String simpleExp = n.f1.accept(this, argu);
       n.f2.accept(this, argu);
       n.f3.accept(this, "arg");
 
       i=0;
+      // System.out.println(instruction.getInstruction()+" has arguments: "+argList );
+      System.out.println(argList);
       for(String arg : argList){
         String reg = registerMap.get(curProcedure).get(arg);
+
+        System.out.println("argument: "+arg+" gets assigned to: "+reg);
+        System.out.println(i);
+        try{System.in.read();}
+        catch(Exception e){}
+
         if(reg == null){
           emit("ALOAD v1 SPILLEDARG "+getSpillIndex(arg));
           reg = "v1";
@@ -524,7 +535,7 @@ public class KangaTranslator implements GJVisitor<String, String> {
           emit("\tMOVE a"+i+" "+reg+"\n");
         else{
           emit("\tPASSARG "+(i-3)+" "+reg+"\n");
-          theStack.push(reg);
+          // frameStack.push(reg);
         }
         i++;
       }
@@ -589,6 +600,9 @@ public class KangaTranslator implements GJVisitor<String, String> {
       n.f0.accept(this, argu);
       String tempNo = n.f1.accept(this, argu);
       String kangaTemp = registerMap.get(curProcedure).get("TEMP "+tempNo);
+      if(argu.equals("arg")){
+        argList.add("TEMP "+tempNo);
+      }
       if(kangaTemp == null){
         if(spillStack.get(curProcedure).contains("TEMP "+tempNo)){
           return "ALOAD v1 SPILLEDARG "+getSpillIndex("TEMP "+tempNo);
@@ -598,9 +612,6 @@ public class KangaTranslator implements GJVisitor<String, String> {
       else if(kangaTemp.contains("PASSARG")){
         int spilledArg = Integer.parseInt(kangaTemp.substring(kangaTemp.length()-1, kangaTemp.length()));        
         return "\tALOAD v1 SPILLEDARG "+(spilledArg-1)+"\n";
-      }
-      if(argu.equals("arg")){
-        argList.add("TEMP "+tempNo);
       }
       return kangaTemp;
    }
