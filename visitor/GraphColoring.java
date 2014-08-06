@@ -68,6 +68,7 @@ public class GraphColoring{
 
 			// also for function arguments
 			if(!method.equals("MAIN")){
+				System.out.println(method+" has "+Integer.parseInt(procStats.get(method).get("argsNo").get(0))+" arguments");
 				for(int i=1; i<Integer.parseInt(procStats.get(method).get("argsNo").get(0)); i++){
 					if(i > 3){
 						globalRegisterMap.get(method).put("TEMP "+i, "PASSARG "+(i-3));
@@ -76,11 +77,17 @@ public class GraphColoring{
 					globalRegisterMap.get(method).put("TEMP "+i, "s"+i);
 					sRegs.remove("s"+i);
 					removeTemp("TEMP "+i, globalInterferenceMap.get(method));
+					System.out.println("TEMP "+i+": "+globalRegisterMap.get(method).get("TEMP "+i));
 				}
+				try{System.in.read();}
+				catch(Exception e){}
 			}
 
-			// System.out.println("This should not contain arg temps: "+globalInterferenceMap.get(method));
-			// System.out.println(method+"'s regMap before loop: "+globalRegisterMap.get(method));
+			System.out.println("This should not contain arg temps: "+globalInterferenceMap.get(method));
+			System.out.println(method+"'s regMap before loop: "+globalRegisterMap.get(method));
+
+			try{System.in.read();}
+			catch(Exception e){}
 
 			// Chaitin's Algorithm
 			while( !globalInterferenceMap.get(method).isEmpty() ){
@@ -120,12 +127,10 @@ public class GraphColoring{
 				globalRegisterMap.get(method).put(temp, (String) availableRegs.toArray()[0]);
 			}
 
-			System.out.println("-------------------------------\n"+method+"'s regMap: "+globalRegisterMap.get(method)+"\n");
-			System.out.println("-------------------------------\n"+method+" spill: "+globalSpillStack.get(method)+"\n");
+			System.out.println("-------------------------------\n"+method+"'s regMap final: "+globalRegisterMap.get(method)+"\n");
+			System.out.println("-------------------------------\n"+method+" spillMap: "+globalSpillStack.get(method)+"\n");
 
-			try{
-				System.in.read();
-			}
+			try{System.in.read();}
 			catch(Exception e){}
 		}
 

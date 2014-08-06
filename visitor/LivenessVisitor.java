@@ -203,14 +203,13 @@ public class LivenessVisitor implements GJVisitor<String, String> {
       //   catch(Exception e){}
       // }
       
-
+      System.out.println("calculating in and out sets");
       // loop to calculate in and out sets
       for(String method : methodInstructions.keySet()){
         instructions = methodInstructions.get(method);
         
         int changes = 0;
         int reps = 0;
-
         while(changes != instructions.size()){
           reps++;
           changes = 0;
@@ -219,7 +218,6 @@ public class LivenessVisitor implements GJVisitor<String, String> {
             HashSet<String> oldIn = new HashSet<String>(i.getIn());
             HashSet<String> oldOut = new HashSet<String>(i.getOut());
             Set<String> intersection = new HashSet<String>(i.getOut());
-
             intersection.removeAll(i.getDef()); // out - def
             intersection.addAll(i.getUse());  // (out - def) U use
             i.getIn().addAll(intersection);   // in = (out - def) U use
@@ -232,11 +230,15 @@ public class LivenessVisitor implements GJVisitor<String, String> {
         }
       }
 
-      for(Instruction inst2 : methodInstructions.get("LS_Start")){
-        System.out.println("in["+inst2.getId()+"]"+inst2.getIn());
-        System.out.println("i"+inst2.getId()+": "+inst2.getInstruction());
-        System.out.println("out["+inst2.getId()+"]"+inst2.getOut()+"\n");
-      }
+      System.out.println("before prints");
+
+      // for(Instruction inst2 : methodInstructions.get("LS_Start")){
+      //   System.out.println("in["+inst2.getId()+"]"+inst2.getIn());
+      //   System.out.println("i"+inst2.getId()+": "+inst2.getInstruction());
+      //   System.out.println("out["+inst2.getId()+"]"+inst2.getOut()+"\n");
+      // }
+
+      System.out.println("after prints");
       // printing out the final live sets
       // for(String method : methodInstructions.keySet()){
         // System.out.println("\n\n"+method+"'s instructions:");
@@ -248,12 +250,14 @@ public class LivenessVisitor implements GJVisitor<String, String> {
       // }
       // System.out.println("-------------------------------\n\n\n");
 
+
+      System.out.println("constructing interference map");
       // loops to calculate the interference map       
       for(String method : methodInstructions.keySet()){
         instructions = methodInstructions.get(method);
         HashSet<String> toAdd;
         interferenceMap.put(method, new HashMap<String, HashSet<String>>());
-
+        System.out.println("start");
         i = instructions.get(0);
         Iterator iter = i.getIn().iterator();
         String tempIN;
@@ -267,7 +271,7 @@ public class LivenessVisitor implements GJVisitor<String, String> {
           else
             interferenceMap.get(method).get(tempIN).addAll(toAdd);
         }
-        
+        System.out.println("~");
         // loop for out sets 
         String temp;
         Iterator instructionIter = instructions.iterator();
@@ -284,7 +288,7 @@ public class LivenessVisitor implements GJVisitor<String, String> {
             else
               interferenceMap.get(method).get(temp).addAll(toAdd);
           }
-          
+          System.out.println("!");
           iter = i.getIn().iterator();
           while(iter.hasNext()){
             temp = String.valueOf(iter.next());
@@ -296,7 +300,7 @@ public class LivenessVisitor implements GJVisitor<String, String> {
             else
               interferenceMap.get(method).get(temp).addAll(toAdd);
           }
-
+          System.out.println("@");
         }
       }
 

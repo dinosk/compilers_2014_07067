@@ -40,15 +40,14 @@ LS_Start	[2][2][2]
 	HLOAD t4 t5 0
 	HLOAD t6 t4 12
 	MOVE a0 t5
-	MOVE a1 t7
+	MOVE a1 s1
 	CALL t6
 	MOVE t4 v0
 	MOVE s7 t4
 	MOVE t6 s0
 	HLOAD t4 t6 0
 	HLOAD t5 t4 4
-	MOVE a0 t5
-	MOVE a1 t7
+	MOVE a0 t6
 	CALL t5
 	MOVE t4 v0
 	MOVE s7 t4
@@ -58,8 +57,8 @@ LS_Start	[2][2][2]
 	HLOAD t6 t4 0
 	HLOAD t5 t6 8
 	MOVE t6 8
-	MOVE a0 t5
-	MOVE a1 t7
+	MOVE a0 t4
+	MOVE a1 t6
 	CALL t5
 	MOVE t7 v0
 	PRINT t7
@@ -67,8 +66,8 @@ LS_Start	[2][2][2]
 	HLOAD t5 t4 0
 	HLOAD t7 t5 8
 	MOVE t6 12
-	MOVE a0 t5
-	MOVE a1 t7
+	MOVE a0 t4
+	MOVE a1 t6
 	CALL t7
 	MOVE t5 v0
 	PRINT t5
@@ -76,8 +75,8 @@ LS_Start	[2][2][2]
 	HLOAD t6 t4 0
 	HLOAD t5 t6 8
 	MOVE t6 17
-	MOVE a0 t5
-	MOVE a1 t7
+	MOVE a0 t4
+	MOVE a1 t6
 	CALL t5
 	MOVE t7 v0
 	PRINT t7
