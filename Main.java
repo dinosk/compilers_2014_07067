@@ -46,17 +46,6 @@ public class Main {
                 root.accept( sc, filename);
                 procStats = sc.getStats();
                 orderOfProcs = sc.getOrder();
-                System.out.println(orderOfProcs);
-                // System.out.println(procStats.keySet());
-                // for(String procName : procStats.keySet()){
-                //     System.out.println(procName+":\n------------------------------------");
-                //     // System.out.println(procStats.get(procName));
-                //     for(String section : procStats.get(procName).keySet()){
-                //         System.out.println(section+":\n------------------------------------");
-                //         System.out.println(procStats.get(procName).get(section));
-                //         System.out.println("\n\n");
-                //     }
-                // }
 
                 LivenessVisitor liveVisitor = new LivenessVisitor(procStats);
                 root.accept( liveVisitor, filename );
@@ -69,15 +58,7 @@ public class Main {
                 interferenceMap = liveVisitor.getInterferenceMap();
                 labelInstructions = liveVisitor.getLabelInstructions();
 
-                
-                // System.out.println("FINAL interferenceMap: "+interferenceMap);
-
-
                 root.accept( new KangaTranslator(procStats, registerMap, spillStack, cfg, interferenceMap, labelInstructions, orderOfProcs, out), filename );
-                // for(String procName : tempCount.keySet()){
-                    // System.out.println(procName+" max: "+tempCount.get(procName));
-                // }
-                // root.accept( new SpigletVisitor(tempCount,out), filename );
             }
             catch(Exception e){
                 System.out.println(e.toString());

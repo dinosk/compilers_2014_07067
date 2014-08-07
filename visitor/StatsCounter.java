@@ -150,7 +150,7 @@ public class StatsCounter implements GJVisitor<String, String> {
       String _ret=null;
       String name = n.f0.accept(this, argu);
       orderOfProcs.add(name);
-      System.out.println("in Procedure: "+name);
+      // System.out.println("in Procedure: "+name);
       
       curProcedure = name;
       statsMap = new HashMap<String, ArrayList<String>>();
@@ -325,7 +325,7 @@ public class StatsCounter implements GJVisitor<String, String> {
       statsMap.put("tempArgs", argList);
       // System.out.println(curProcedure+"'s "+statsMap);
       // try{
-      //   System.in.read();
+      //   // System.in.read();
       // }
       // catch(Exception e)
       // {

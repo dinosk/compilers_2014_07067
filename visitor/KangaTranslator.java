@@ -84,7 +84,7 @@ public class KangaTranslator implements GJVisitor<String, String> {
 
   public Instruction getInstructionById(int id){
     for(Instruction i : cfg.get(curProcedure)){
-      System.out.println(i.getId());
+      // // System.out.println(i.getId());
       if(i.getId() == id)
         return i;
     }
@@ -246,7 +246,7 @@ public class KangaTranslator implements GJVisitor<String, String> {
       }
       
 
-      System.out.println("deadCodeList: "+deadCodeList);
+      // // System.out.println("deadCodeList: "+deadCodeList);
       
       /////////////////////////////////////////////////////////////////////////////////
       for(String method : cfg.keySet()){
@@ -256,13 +256,13 @@ public class KangaTranslator implements GJVisitor<String, String> {
           if(inst.getInstruction().contains("CALL")){
             for(String liveTTemp : inst.getOut()){
               String reg = registerMap.get(method).get(liveTTemp);
-              System.out.println(reg+" = reg");
+              // System.out.println(reg+" = reg");
               if(reg.contains("t")){
                 curCallStackLocs++;
               }
             }
             if(stackLoc < curCallStackLocs){
-              System.out.println("found a bigger call");
+              // System.out.println("found a bigger call");
               stackLoc = curCallStackLocs;
             }
             curCallStackLocs = 0;
@@ -270,8 +270,8 @@ public class KangaTranslator implements GJVisitor<String, String> {
         }
         stackLocations.put(method, stackLoc);
       }
-      System.out.println(stackLocations);
-      try{System.in.read();}
+      // System.out.println(stackLocations);
+      try{}// System.in.read();
       catch(Exception e){}
 
       curProcedure = "MAIN";
@@ -284,13 +284,13 @@ public class KangaTranslator implements GJVisitor<String, String> {
       n.f4.accept(this, argu);
 
       try {
-        System.out.println("Final Codes:\n"+code);
+        // System.out.println("Final Codes:\n"+code);
         out.write(code);
         out.close();
       } catch( Exception ex ) {
-        System.out.println( "Could not write to output file" );
+        // System.out.println( "Could not write to output file" );
       }
-      System.out.println("Program translated successfully.");
+      // System.out.println("Program translated successfully.");
 
       return _ret;
    }
@@ -314,13 +314,13 @@ public class KangaTranslator implements GJVisitor<String, String> {
       String _ret=null;
       String name = n.f0.accept(this, argu);
       curProcedure = name;
-      System.out.println("-------------------------in Procedure: "+name);
-      System.out.println("with registerMap: "+registerMap.get(name));
+      // System.out.println("-------------------------in Procedure: "+name);
+      // System.out.println("with registerMap: "+registerMap.get(name));
 
       Integer stackPlaces = new Integer(0);
       frameStack.push(registerMap.get(name));
       for(String passargTemp : registerMap.get(name).keySet()){
-        System.out.println(registerMap.get(name).get(passargTemp));
+        // System.out.println(registerMap.get(name).get(passargTemp));
         if(registerMap.get(name).get(passargTemp).contains("PASSARG")){
           stackPlaces+=1;
         }
@@ -481,7 +481,7 @@ public class KangaTranslator implements GJVisitor<String, String> {
       String intLit = n.f3.accept(this, argu);
       
       if(deadCodeList.contains(iCounter)){
-        System.out.println("FOUND DEAD!: "+getInstructionById(iCounter).getInstruction());
+        //// System.out.println("FOUND DEAD!: "+getInstructionById(iCounter).getInstruction());
         emit("NOOP\n");
       }
       else
@@ -508,7 +508,7 @@ public class KangaTranslator implements GJVisitor<String, String> {
       }
       
       if(deadCodeList.contains(iCounter)){
-        System.out.println("FOUND DEAD!: "+getInstructionById(iCounter).getInstruction());
+        //// System.out.println("FOUND DEAD!: "+getInstructionById(iCounter).getInstruction());
         emit("NOOP\n");
       }
       else
@@ -584,21 +584,21 @@ public class KangaTranslator implements GJVisitor<String, String> {
       n.f0.accept(this, argu);
       argList = new ArrayList<String>();
       int i = 0;
-      // System.out.println(curProcedure+"'s arguments: "+procStats.get(curProcedure).get("tempArgs"));
+      // // System.out.println(curProcedure+"'s arguments: "+procStats.get(curProcedure).get("tempArgs"));
 
       String simpleExp = n.f1.accept(this, argu);
       n.f2.accept(this, argu);
       n.f3.accept(this, "arg");
 
       i=0;
-      // System.out.println(instruction.getInstruction()+" has arguments: "+argList );
-      System.out.println(argList);
+      // // System.out.println(instruction.getInstruction()+" has arguments: "+argList );
+      // // System.out.println(argList);
       for(String arg : argList){
         String reg = registerMap.get(curProcedure).get(arg);
 
-        System.out.println("argument: "+arg+" gets assigned to: "+reg);
-        System.out.println(i);
-        // try{System.in.read();}
+        // // System.out.println("argument: "+arg+" gets assigned to: "+reg);
+        // // System.out.println(i);
+        // try{// System.in.read();}
         // catch(Exception e){}
 
         if(reg == null){
@@ -618,10 +618,10 @@ public class KangaTranslator implements GJVisitor<String, String> {
         }
         i++;
       }
-      System.out.println(iCounter);
+      // // System.out.println(iCounter);
       // Instruction instruction = getInstructionByText("CALL "+simpleExp+"\n");
       Instruction instruction = getInstructionById(iCounter);
-      System.out.println(instruction);
+      // // System.out.println(instruction);
       callOut = instruction.getOut();
       // Stack<String> tempStack = new Stack<String>();
       
@@ -629,14 +629,14 @@ public class KangaTranslator implements GJVisitor<String, String> {
       int savedNumber = 0;
       for(String liveTTemp : callOut){
         if(registerMap.get(curProcedure).get(liveTTemp).contains("t")){
-          System.out.println(registerMap.get(curProcedure).get(liveTTemp)+" needs to be saved");
+          // // System.out.println(registerMap.get(curProcedure).get(liveTTemp)+" needs to be saved");
           emit("\tASTORE SPILLEDARG "+getNextStackPos()+" "+registerMap.get(curProcedure).get(liveTTemp)+"\n");
           numberOfSaves++;
         }
       }
       savedNumber = numberOfSaves;
-        // System.out.println(callOut);
-        // try{System.in.read();}
+        // // System.out.println(callOut);
+        // try{// System.in.read();}
         // catch(Exception e){}
       emit("\tCALL "+simpleExp+"\n");
       

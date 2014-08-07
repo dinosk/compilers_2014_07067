@@ -194,7 +194,7 @@ public class LivenessVisitor implements GJVisitor<String, String> {
         }        
       }
       
-      System.out.println("calculating in and out sets");
+      // System.out.println("calculating in and out sets");
       // loop to calculate in and out sets
       for(String method : methodInstructions.keySet()){
         instructions = methodInstructions.get(method);
@@ -271,9 +271,9 @@ public class LivenessVisitor implements GJVisitor<String, String> {
 
       // printing the final interference maps
       // for(String method2 : interferenceMap.keySet()){
-        // System.out.println(method2+"'s interferenceMap:");
-        for(String temp2 : interferenceMap.get("MAIN").keySet())
-          System.out.println(temp2+": "+interferenceMap.get("MAIN").get(temp2));
+        // // System.out.println(method2+"'s interferenceMap:");
+        // for(String temp2 : interferenceMap.get("MAIN").keySet())
+          // System.out.println(temp2+": "+interferenceMap.get("MAIN").get(temp2));
         
       // }
       return _ret;
@@ -673,19 +673,10 @@ public class LivenessVisitor implements GJVisitor<String, String> {
     * f0 -> <IDENTIFIER>
     */
    public String visit(Label n, String argu) {
-      // if(labelExists){
-      //     System.out.println("TA KATAFERA ");
-      //   labelFirstInstruction = true;
-      //   labelExists = false;
-      //   labelAndInstruction.push(n.f0.toString());
-      //   for(String label : labelAndInstruction)
-      //     System.out.println(label);
-      // }
       if(argu != null){
         if(argu.equals("label")){
           labelFirstInstruction = true;
           currentLabel = n.f0.toString();
-          // labelAndInstruction.push(n.f0.toString());
           labelInstructions.put(n.f0.toString(), null);
         }
       }
