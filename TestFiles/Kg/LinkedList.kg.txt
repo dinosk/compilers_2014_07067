@@ -580,6 +580,7 @@ L34	NOOP
 	HSTORE t1 0 t0
 	MOVE s1 t1
 	MOVE t0 s1
+	PRINT s1
 	HLOAD t1 t0 0
 	HLOAD t1 t1 0
 	MOVE a0 t0
@@ -587,6 +588,7 @@ L34	NOOP
 	MOVE t0 v0
 	MOVE v0 t0
 	MOVE s1 s1
+	PRINT s1
 	MOVE t0 s1
 	HLOAD t1 t0 0
 	HLOAD t1 t1 0

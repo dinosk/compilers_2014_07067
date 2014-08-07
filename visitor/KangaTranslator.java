@@ -257,7 +257,7 @@ public class KangaTranslator implements GJVisitor<String, String> {
 
       curProcedure = "MAIN";
       n.f0.accept(this, argu);
-      emit("MAIN\t[0][0]["+procStats.get(curProcedure).get("tempArgs").size()+"]\n");
+      emit("MAIN\t[0]["+(stackLocations.get("MAIN")+1)+"]["+procStats.get(curProcedure).get("tempArgs").size()+"]\n");
       n.f1.accept(this, argu);
       n.f2.accept(this, argu);
       emit("END\n");
@@ -322,7 +322,7 @@ public class KangaTranslator implements GJVisitor<String, String> {
 
       // calculates the second brack in every procedure
       if(secondBracket<Integer.parseInt(procStats.get(curProcedure).get("argsNo").get(0)))
-        secondBracket = Integer.parseInt(procStats.get(curProcedure).get("argsNo").get(0));
+        secondBracket = Integer.parseInt(procStats.get(curProcedure).get("argsNo").get(0)) + stackLocations.get(curProcedure);
       emit(name+"\t["+argNo+"]["+secondBracket+"]["+procStats.get(curProcedure).get("tempArgs").size()+"]\n");
 
       // protects s regs that are going to be overwritten
@@ -593,24 +593,30 @@ public class KangaTranslator implements GJVisitor<String, String> {
       callOut = instruction.getOut();
       // Stack<String> tempStack = new Stack<String>();
       
+      int numberOfSaves = 0;
+      int savedNumber = 0;
       for(String liveTTemp : callOut){
         if(registerMap.get(curProcedure).get(liveTTemp).contains("t")){
           System.out.println(registerMap.get(curProcedure).get(liveTTemp)+" needs to be saved");
           emit("\tASTORE SPILLEDARG "+getNextStackPos()+" "+registerMap.get(curProcedure).get(liveTTemp)+"\n");
+          numberOfSaves++;
         }
       }
+      savedNumber = numberOfSaves;
         // System.out.println(callOut);
         // try{System.in.read();}
         // catch(Exception e){}
       emit("\tCALL "+simpleExp+"\n");
       
+
       for(String liveTTemp : callOut){
         if(registerMap.get(curProcedure).get(liveTTemp).contains("t")){
-          emit("\tALOAD v1 SPILLEDARG "+stackTop+"\n");
+          emit("\tALOAD v1 SPILLEDARG "+(stackTop-numberOfSaves+1)+"\n");
           emit("\tMOVE "+registerMap.get(curProcedure).get(liveTTemp)+" v1"+"\n");
-          stackTop--;
+          numberOfSaves--;
         }
       }
+      stackTop -= savedNumber;
       n.f4.accept(this, argu);
       return "v0";
    }
