@@ -1168,7 +1168,7 @@ Tree_RemoveRight	[3][6][2]
 	MOVE s0 a0
 	MOVE s1 a1
 	MOVE s2 a2
-L39L39	NOOP
+L39	NOOP
 	MOVE t5 s2
 	HLOAD t4 t5 0
 	HLOAD t6 t4 28
@@ -1270,7 +1270,7 @@ Tree_RemoveLeft	[3][6][2]
 	MOVE s0 a0
 	MOVE s1 a1
 	MOVE s2 a2
-L41L41	NOOP
+L41	NOOP
 	MOVE t6 s2
 	HLOAD t4 t6 0
 	HLOAD t5 t4 32

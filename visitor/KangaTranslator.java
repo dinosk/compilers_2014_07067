@@ -705,8 +705,8 @@ public class KangaTranslator implements GJVisitor<String, String> {
     */
    public String visit(Label n, String argu) {
       n.f0.accept(this, argu);
-      if(labelPending)
-        emit(n.f0.toString());
+      // if(labelPending)
+        // emit(n.f0.toString());
       return n.f0.toString();
    }
 
