@@ -33,6 +33,8 @@ public class KangaTranslator implements GJVisitor<String, String> {
   String curProcedure;
   int iCounter;
   int stackTop;
+  HashSet<Integer> deadCodeList;
+
 
   public KangaTranslator(HashMap<String, HashMap<String, ArrayList<String>>> procStats, HashMap<String, HashMap<String, String>> registerMap,
                          HashMap<String, Stack<String>> spillStack, HashMap<String, ArrayList<Instruction>> cfg, HashMap<String, HashMap<String, HashSet<String>>> interferenceMap, HashMap<String, Instruction> labelInstructions, ArrayList<String> orderOfProcs, BufferedWriter out){
@@ -53,6 +55,7 @@ public class KangaTranslator implements GJVisitor<String, String> {
     this.code = "";
     this.iCounter = 0;
     this.stackLocations = new HashMap<String, Integer>();
+    this.deadCodeList = new HashSet<Integer>();
   }
 
   public void emit(String code){
@@ -220,16 +223,32 @@ public class KangaTranslator implements GJVisitor<String, String> {
    public String visit(Goal n, String argu) {
       String _ret=null;
 
-      // for(String proc : orderOfProcs){
-      //   System.out.println("in cfg's proc: "+proc);
-      //   for(Instruction i : cfg.get(proc)){
-      //     System.out.println(i.getInstruction());
+      HashMap<String, Integer> defedTemps = new HashMap<String, Integer>();
+      for(String method : cfg.keySet()){
+       
+        for(Instruction instr : cfg.get(method)){
+          for(String tempUse : instr.getUse()){
+            defedTemps.remove(tempUse);  
+          }
+          if(instr.getType().equals("JUMP") || instr.getType().equals("CJUMP") || instr.getType().equals("NOOP")){
+            defedTemps.clear();
+            continue;
+          }
+          if(!instr.getType().equals("MOVE") && !instr.getType().equals("HLOAD"))
+            continue;
+          if(defedTemps.containsKey(instr.getDef().iterator().next())){
+            deadCodeList.add(defedTemps.get(instr.getDef().iterator().next()));
+          }
+          else{
+            defedTemps.put(instr.getDef().iterator().next(), instr.getId());
+          }
+        }
+      }
+      
 
-      //   }
-      //   try{System.in.read();}
-      //   catch(Exception e){}
-      // }
-
+      System.out.println("deadCodeList: "+deadCodeList);
+      
+      /////////////////////////////////////////////////////////////////////////////////
       for(String method : cfg.keySet()){
         Integer curCallStackLocs = new Integer(0);
         Integer stackLoc = new Integer(0);
@@ -455,12 +474,19 @@ public class KangaTranslator implements GJVisitor<String, String> {
     */
    public String visit(HLoadStmt n, String argu) {
       String _ret=null;
+      Instruction i;
       n.f0.accept(this, argu);
       String temp = n.f1.accept(this, argu);
       String temp2 = n.f2.accept(this, argu);
       String intLit = n.f3.accept(this, argu);
+      
+      if(deadCodeList.contains(iCounter)){
+        System.out.println("FOUND DEAD!: "+getInstructionById(iCounter).getInstruction());
+        emit("NOOP\n");
+      }
+      else
+        emit("\tHLOAD "+temp+" "+temp2+" "+intLit+"\n");
       iCounter++;
-      emit("\tHLOAD "+temp+" "+temp2+" "+intLit+"\n");
       return _ret;
    }
 
@@ -480,8 +506,14 @@ public class KangaTranslator implements GJVisitor<String, String> {
         emit(exp);
         exp = "v1";
       }
+      
+      if(deadCodeList.contains(iCounter)){
+        System.out.println("FOUND DEAD!: "+getInstructionById(iCounter).getInstruction());
+        emit("NOOP\n");
+      }
+      else
+        emit("\tMOVE "+temp+" "+exp+"\n");
       iCounter++;
-      emit("\tMOVE "+temp+" "+exp+"\n");
       return _ret;
    }
 
