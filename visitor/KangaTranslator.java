@@ -64,14 +64,10 @@ public class KangaTranslator implements GJVisitor<String, String> {
 
   public int getSpillIndex(String temp){
     int index = 0;
-
-    // for(String spilledTemp : frameStack.get(curProcedure)){
-    //   if(spilledTemp.equals(temp)){
-    //     return index;
-    //   }
-    //   index++;
-    // }
-    return -1;
+    if(methodStackMap.get(curProcedure).search(temp) != -1){
+      return methodStackMap.get(curProcedure).search(temp);
+    }
+    return getNextStackPos();
   }
 
   public Instruction getInstructionByText(String text){
