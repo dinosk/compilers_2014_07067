@@ -43,13 +43,13 @@ LS_Start [2][2][2]
        MOVE a1 s1
        CALL t2
        MOVE t1 v0
-       MOVE t0 s0
+              MOVE t0 s0
        HLOAD t1 t0 0
        HLOAD t2 t1 4
        MOVE a0 t0
        CALL t2
        MOVE t1 v0
-       MOVE t0 9999
+              MOVE t0 9999
        PRINT t0
        MOVE t0 s0
        HLOAD t1 t0 0
@@ -180,7 +180,6 @@ LS_Init [2][2][0]
        ASTORE SPILLEDARG 1 s1
        MOVE s0 a0
        MOVE s1 a1
-       PRINT s1
        HSTORE s0 8 s1
        MOVE t0 PLUS s1 1
        MOVE t1 4

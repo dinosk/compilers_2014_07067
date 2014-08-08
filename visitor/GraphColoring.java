@@ -14,16 +14,20 @@ public class GraphColoring{
 	Stack<String> coloredStack;
 	HashMap<String, Integer> spillCosts;
 	HashMap<String, HashMap<String, ArrayList<String>>> procStats;
+	HashMap<String, ArrayList<Instruction>> methodInstructions;
+	HashMap<String, HashSet<String>> liveAtCall;
 	int maxRegs;
 
 	public GraphColoring(HashMap<String, HashMap<String, HashSet<String>>> interferenceMap, HashMap<String, Integer> spillCosts,
-						 HashMap<String, HashMap<String, ArrayList<String>>> procStats){
+						 HashMap<String, ArrayList<Instruction>> methodInstructions, HashMap<String, HashMap<String, ArrayList<String>>> procStats){
 		this.globalInterferenceMap = interferenceMap;
 		this.globalInterferenceMapCopy = trueCopy(globalInterferenceMap);
 		this.globalRegisterMap = new HashMap<String, HashMap<String, String>>();
 		this.globalSpillStack = new HashMap<String, Stack<String>>();
 		this.spillCosts = spillCosts;
 		this.procStats = procStats;
+		this.methodInstructions = methodInstructions;
+		this.liveAtCall = new HashMap<String, HashSet<String>>();
 
 		List<String> regs = Arrays.asList("a0", "a1", "a2", "a3");
 		this.argRegs = new HashSet<String>(regs);
@@ -32,6 +36,20 @@ public class GraphColoring{
 		regs = Arrays.asList("t0", "t1", "t2", "t3", "t4", "t5", "t6", "t7", "t8", "t9");
 		this.tRegs = new HashSet<String>(regs);
 		this.maxRegs = tRegs.size() + sRegs.size();
+
+		for(String method : methodInstructions.keySet()){
+		  HashSet<String> liveTemps = new HashSet<String>();
+		  for(Instruction i : methodInstructions.get(method)){
+		    if(i.getInstruction().contains("CALL")){
+		      HashSet<String> live = new HashSet<String>(i.getOut());
+		      live.retainAll(i.getIn());
+		      for(String temp : live) 
+		        liveTemps.add(temp);
+		    }
+		  }
+		  liveAtCall.put(method, liveTemps);
+		  System.out.println("live temps at calls in "+method+" are "+liveAtCall.get(method));
+		}
 	}
 
 	// tool function to make a copy of the interferenceMap
@@ -68,7 +86,6 @@ public class GraphColoring{
 
 			// also for function arguments
 			if(!method.equals("MAIN")){
-				// // System.out.println(method+" has "+Integer.parseInt(procStats.get(method).get("argsNo").get(0))+" arguments");
 				for(int i=1; i<Integer.parseInt(procStats.get(method).get("argsNo").get(0)); i++){
 					if(i > 3){
 						globalRegisterMap.get(method).put("TEMP "+i, "PASSARG "+(i-3));
@@ -77,17 +94,8 @@ public class GraphColoring{
 					globalRegisterMap.get(method).put("TEMP "+i, "s"+i);
 					sRegs.remove("s"+i);
 					removeTemp("TEMP "+i, globalInterferenceMap.get(method));
-					// // System.out.println("TEMP "+i+": "+globalRegisterMap.get(method).get("TEMP "+i));
 				}
-				// try{// System.in.read();}
-				// catch(Exception e){}
 			}
-
-			// // System.out.println("This should not contain arg temps: "+globalInterferenceMap.get(method));
-			// // System.out.println(method+"'s regMap before loop: "+globalRegisterMap.get(method));
-
-			// try{// System.in.read();}
-			// catch(Exception e){}
 
 			// Chaitin's Algorithm
 			while( !globalInterferenceMap.get(method).isEmpty() ){
@@ -105,9 +113,6 @@ public class GraphColoring{
 					}
 				}
 			}
-
-			// // System.out.println("final coloredStack: "+coloredStack);
-			// // System.out.println("final spillStack: "+spillStack);
 			
 			// Coloring of the registers
 			for(String temp : coloredStack){
@@ -115,23 +120,35 @@ public class GraphColoring{
 					continue;
 				}
 				HashSet<String> availableRegs = new HashSet<String>(tRegs);
+				// if(liveAtCall.get(method).contains(temp)){
+					availableRegs.addAll(sRegs);
+				// }
 
 				for(String neighbor : globalInterferenceMapCopy.get(method).get(temp)){
 					String reg = globalRegisterMap.get(method).get(neighbor);
 					if( reg != null ){
 						availableRegs.remove(reg);
 						if(availableRegs.isEmpty())
-							availableRegs.addAll(sRegs);
+							break;
 					}
 				}
-				globalRegisterMap.get(method).put(temp, (String) availableRegs.toArray()[0]);
+
+				if(liveAtCall.get(method).contains(temp)){
+					for(String improvementReg : availableRegs){
+						if(improvementReg.contains("s")){
+							globalRegisterMap.get(method).put(temp, improvementReg);
+							availableRegs.remove(improvementReg);			
+							System.out.println("Improved "+temp+" to "+improvementReg);
+							System.out.println("Remaining regs "+availableRegs);
+							break;
+						}
+					}
+				}
+				if(globalRegisterMap.get(method).get(temp)==null){
+					globalRegisterMap.get(method).put(temp, (String) availableRegs.toArray()[0]);
+				}
+
 			}
-
-			// // System.out.println("-------------------------------\n"+method+"'s regMap final: "+globalRegisterMap.get(method)+"\n");
-			// // System.out.println("-------------------------------\n"+method+" spillMap: "+globalSpillStack.get(method)+"\n");
-
-			// try{// System.in.read();}
-			// catch(Exception e){}
 		}
 
 		return globalRegisterMap;

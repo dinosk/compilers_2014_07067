@@ -29,6 +29,7 @@ public class LivenessVisitor implements GJVisitor<String, String> {
   HashMap<String, Stack<String>> spillStack;
   HashMap<String, HashMap<String, String>> registerMap;
   HashMap<String, HashMap<String, ArrayList<String>>> procStats;
+  
 
   public LivenessVisitor(HashMap<String, HashMap<String, ArrayList<String>>> procStats){
     this.iCounter = 0;
@@ -43,12 +44,12 @@ public class LivenessVisitor implements GJVisitor<String, String> {
     this.interferenceMap = new HashMap<String, HashMap<String, HashSet<String>>>();
     this.spillCosts = new HashMap<String, Integer>();
     this.methodInstructions = new HashMap<String, ArrayList<Instruction>>();
-    
     this.argList = new ArrayList<String>();
+    
   }
 
   public void calcRegisterMap(){
-    GraphColoring graph = new GraphColoring(trueCopy(interferenceMap), spillCosts, procStats);
+    GraphColoring graph = new GraphColoring(trueCopy(interferenceMap), spillCosts, methodInstructions, procStats);
     registerMap = graph.getRegisterMap();
     spillStack = graph.getSpillStack();
   }
@@ -271,11 +272,12 @@ public class LivenessVisitor implements GJVisitor<String, String> {
 
       // printing the final interference maps
       // for(String method2 : interferenceMap.keySet()){
-        // // System.out.println(method2+"'s interferenceMap:");
-        // for(String temp2 : interferenceMap.get("MAIN").keySet())
-          // System.out.println(temp2+": "+interferenceMap.get("MAIN").get(temp2));
-        
+      //   System.out.println(method2+"'s interferenceMap:");
+      //   for(String temp2 : interferenceMap.get(method2).keySet())
+      //     System.out.println(temp2+": "+interferenceMap.get(method2).get(temp2));
       // }
+      // try{System.in.read();}
+      // catch(Exception e){}
       return _ret;
    }
 

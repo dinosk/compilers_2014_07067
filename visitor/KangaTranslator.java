@@ -21,13 +21,11 @@ public class KangaTranslator implements GJVisitor<String, String> {
   Stack<HashMap<String, String>> frameStack;
   Stack<Integer> curTop;
   ArrayList<String> orderOfProcs;
-  // Stack<ArrayList<String>> frameStack2;
   HashMap<String, Integer> stackLocations;
   HashSet<String> sRegs;
   HashSet<String> argRegs;
   ArrayList<String> argList;
   ArrayList<String> protectedSRegs; 
-  boolean labelPending;
   BufferedWriter out;
   String code;
   String curProcedure;
@@ -126,9 +124,11 @@ public class KangaTranslator implements GJVisitor<String, String> {
 
   public void getNextStackTop(){
     int stackSize=0;
+    Integer tempLastStackPlaces = curTop.pop();
     for(Integer stackPlaces : curTop){
       stackSize+= stackPlaces;
     }
+    curTop.push(tempLastStackPlaces);
     stackTop = stackSize-1;
   }
 
@@ -230,7 +230,7 @@ public class KangaTranslator implements GJVisitor<String, String> {
           for(String tempUse : instr.getUse()){
             defedTemps.remove(tempUse);  
           }
-          if(instr.getType().equals("JUMP") || instr.getType().equals("CJUMP") || instr.getType().equals("NOOP")){
+          if(instr.getType().equals("JUMP") || instr.getType().equals("CJUMP")){
             defedTemps.clear();
             continue;
           }
@@ -243,15 +243,20 @@ public class KangaTranslator implements GJVisitor<String, String> {
             defedTemps.put(instr.getDef().iterator().next(), instr.getId());
           }
         }
-      }
-      
 
-      // // System.out.println("deadCodeList: "+deadCodeList);
+        // System.out.println("REMAINING TEMPS NOT USED IN METHOD: "+defedTemps);
+        Collection c = defedTemps.values();
+        Iterator itr = c.iterator();
+        while (itr.hasNext()) {
+          deadCodeList.add((Integer)itr.next());
+        }
+      }
       
       /////////////////////////////////////////////////////////////////////////////////
       for(String method : cfg.keySet()){
         Integer curCallStackLocs = new Integer(0);
         Integer stackLoc = new Integer(0);
+        HashSet<String> mainStackRegs = new HashSet<String>();
 
         for(Instruction inst : cfg.get(method)){
           if(inst.getInstruction().contains("CALL")){
@@ -269,15 +274,22 @@ public class KangaTranslator implements GJVisitor<String, String> {
             curCallStackLocs = 0;
           }
         }
-        stackLocations.put(method, stackLoc);
+        for(String temp : registerMap.get(method).keySet()){
+          if(registerMap.get(method).get(temp).contains("s") ||
+             registerMap.get(method).get(temp).contains("SPILL") || 
+             registerMap.get(method).get(temp).contains("PASSARG")){
+            // stackLoc++;
+            mainStackRegs.add(registerMap.get(method).get(temp));
+          }
+        }
+        stackLocations.put(method, stackLoc+mainStackRegs.size());
       }
-      // System.out.println(stackLocations);
-      try{}// System.in.read();
-      catch(Exception e){}
+
+      /////////////////////////////////////////////////////////////////////////////////
 
       curProcedure = "MAIN";
       n.f0.accept(this, argu);
-      emit("MAIN\t[0]["+(stackLocations.get("MAIN")+1)+"]["+procStats.get(curProcedure).get("tempArgs").size()+"]\n");
+      emit("MAIN\t[0]["+stackLocations.get("MAIN")+"]["+procStats.get(curProcedure).get("tempArgs").size()+"]\n");
       n.f1.accept(this, argu);
       n.f2.accept(this, argu);
       emit("END\n");
@@ -285,13 +297,12 @@ public class KangaTranslator implements GJVisitor<String, String> {
       n.f4.accept(this, argu);
 
       try {
-        // System.out.println("Final Codes:\n"+code);
         out.write(code);
         out.close();
       } catch( Exception ex ) {
-        // System.out.println( "Could not write to output file" );
+        System.out.println( "Could not write to output file" );
       }
-      // System.out.println("Program translated successfully.");
+      System.out.println("Program translated successfully.");
 
       return _ret;
    }
@@ -300,7 +311,6 @@ public class KangaTranslator implements GJVisitor<String, String> {
     * f0 -> ( ( Label() )? Stmt() )*
     */
    public String visit(StmtList n, String argu) {
-      labelPending = true;
       return n.f0.accept(this, argu);
    }
 
@@ -313,66 +323,81 @@ public class KangaTranslator implements GJVisitor<String, String> {
     */
    public String visit(Procedure n, String argu) {
       String _ret=null;
+      Stack<String> methodStack = new Stack<String>();
+      HashMap<String, String> sRegProtect = new HashMap<String, String>();
+
       String name = n.f0.accept(this, argu);
       curProcedure = name;
-      // System.out.println("-------------------------in Procedure: "+name);
+      // System.out.println("-------------------------in Procedure: "+name+" "+Integer.parseInt(procStats.get(curProcedure).get("argsNo").get(0)));
       // System.out.println("with registerMap: "+registerMap.get(name));
+      // System.out.println("with spillStack: "+spillStack.get(name));
 
       Integer stackPlaces = new Integer(0);
       frameStack.push(registerMap.get(name));
+
       for(String passargTemp : registerMap.get(name).keySet()){
-        // System.out.println(registerMap.get(name).get(passargTemp));
-        if(registerMap.get(name).get(passargTemp).contains("PASSARG")){
-          stackPlaces+=1;
+        if((registerMap.get(name).get(passargTemp).contains("PASSARG") || 
+            registerMap.get(name).get(passargTemp).contains("s") || 
+            registerMap.get(name).get(passargTemp).contains("SPILL"))
+            && !methodStack.contains(registerMap.get(name).get(passargTemp))){
+          methodStack.push(registerMap.get(name).get(passargTemp));
         }
       }
-      curTop.push(stackPlaces);
-      getNextStackTop();
 
-      int startingPoint;
-      String sReg;
-      int i;
-      protectedSRegs = new ArrayList<String>();
+      // System.out.println(methodStack);
+      curTop.push(methodStack.size());
+      getNextStackTop();
 
       n.f1.accept(this, argu);
       String argNo = n.f2.accept(this, argu);
       n.f3.accept(this, argu);
-      int secondBracket = 0;
-      secondBracket = Integer.parseInt(procStats.get(curProcedure).get("argsNo").get(0)) - 4 + spillStack.get(curProcedure).size();
+      int secondBracket = stackLocations.get(curProcedure);
+      // secondBracket = Integer.parseInt(procStats.get(curProcedure).get("argsNo").get(0)) - 4 + spillStack.get(curProcedure).size();
 
-      // calculates the second brack in every procedure
-      if(secondBracket<Integer.parseInt(procStats.get(curProcedure).get("argsNo").get(0)))
-        secondBracket = Integer.parseInt(procStats.get(curProcedure).get("argsNo").get(0)) + stackLocations.get(curProcedure);
+      // // calculates the second brack in every procedure
+      // if(secondBracket<Integer.parseInt(procStats.get(curProcedure).get("argsNo").get(0)))
+      //   secondBracket = stackLocations.get(curProcedure);
+
+      System.out.println("secondBracket in "+name+" = "+secondBracket);
       emit(name+"\t["+argNo+"]["+secondBracket+"]["+procStats.get(curProcedure).get("tempArgs").size()+"]\n");
+      
+      // try{System.in.read();}
+      // catch(Exception e){}
+      // // protects s regs that might get overwritten
+      // for( i=0; i<Integer.parseInt(procStats.get(curProcedure).get("argsNo").get(0)); i++ ){
+      //   int stackPos = getNextStackPos();
+      //   emit("\tASTORE SPILLEDARG "+stackPos+" s"+i+"\n");
+      //   sRegProtect.put("s"+i, "SPILLEDARG "+stackPos);
+      //   // frameStack.push("s"+i);
+      //   if(i==3)
+      //     break;
+      // }
+      // System.out.println("protected args so far:"+sRegProtect);
 
-      // protects s regs that are going to be overwritten
-      for( i=0; i<Integer.parseInt(procStats.get(curProcedure).get("argsNo").get(0)); i++ ){
-        int stackPos = getNextStackPos();
-        emit("\tASTORE SPILLEDARG "+stackPos+" s"+i+"\n");
-        protectedSRegs.add("SPILLEDARG "+stackPos);
-        // frameStack.push("s"+i);
-        if(i==3)
-          break;
+      for( String temp : registerMap.get(curProcedure).keySet()){
+        String reg = registerMap.get(curProcedure).get(temp);
+        if(reg.contains("s") && !sRegProtect.containsKey(reg)){
+          int stackPos = getNextStackPos();
+          emit("\tASTORE SPILLEDARG "+stackPos+" "+reg+"\n");
+          sRegProtect.put(reg, "SPILLEDARG "+stackPos);
+        }
       }
-
-      // frameStack.clear();
-
+      
       // saves arguments to s regs
-      for( i=0; i<Integer.parseInt(procStats.get(curProcedure).get("argsNo").get(0)); i++ ){
+      for( int i=0; i<Integer.parseInt(procStats.get(curProcedure).get("argsNo").get(0)); i++ ){
         emit("\tMOVE s"+i+" a"+i+"\n");
         if(i==3)
           break;
       }      
       
+      // System.out.println("Final sRegsSaved: "+sRegProtect);
       n.f4.accept(this, argu);
-      
-      int upperBound = Integer.parseInt(procStats.get(curProcedure).get("argsNo").get(0))-1;
+      // System.out.println("will load the following: "+sRegProtect);
       int j = 0;
-      for(String spilledArg : protectedSRegs){
-        emit("\tALOAD s"+j+" "+spilledArg+"\n");
+      for(String savedReg : sRegProtect.keySet()){
+        emit("\tALOAD "+savedReg+" "+sRegProtect.get(savedReg)+"\n");
         j++;
       }
-
       emit("END\n");
       frameStack.pop();
       curTop.pop();
@@ -390,7 +415,6 @@ public class KangaTranslator implements GJVisitor<String, String> {
     *       | PrintStmt()
     */
    public String visit(Stmt n, String argu) {
-      labelPending = false;
       return n.f0.accept(this, argu);
    }
 
@@ -500,7 +524,6 @@ public class KangaTranslator implements GJVisitor<String, String> {
       String _ret=null;
       n.f0.accept(this, argu);
       String temp = n.f1.accept(this, argu);
-      
       String exp = n.f2.accept(this, argu);
 
       if(exp.contains("ALOAD")){
@@ -515,6 +538,7 @@ public class KangaTranslator implements GJVisitor<String, String> {
       else
         emit("\tMOVE "+temp+" "+exp+"\n");
       iCounter++;
+
       return _ret;
    }
 
@@ -648,9 +672,7 @@ public class KangaTranslator implements GJVisitor<String, String> {
    public String visit(HAllocate n, String argu) {
       String _ret=null;
       n.f0.accept(this, argu);
-      // emit("\tHALLOCATE ");
       String simpleExp = n.f1.accept(this, argu);
-      // emit(simpleExp+"\n");
       return "HALLOCATE "+simpleExp;
    }
 
@@ -701,9 +723,10 @@ public class KangaTranslator implements GJVisitor<String, String> {
       }
       if(kangaTemp == null){
         if(spillStack.get(curProcedure).contains("TEMP "+tempNo)){
+          System.out.println("actually spilled one");
           return "ALOAD v1 SPILLEDARG "+getSpillIndex("TEMP "+tempNo);
         }
-        return "s7";
+        return "v0";
       }
       else if(kangaTemp.contains("PASSARG")){
         int spilledArg = Integer.parseInt(kangaTemp.substring(kangaTemp.length()-1, kangaTemp.length()));        
@@ -725,8 +748,6 @@ public class KangaTranslator implements GJVisitor<String, String> {
     */
    public String visit(Label n, String argu) {
       n.f0.accept(this, argu);
-      // if(labelPending)
-        // emit(n.f0.toString());
       return n.f0.toString();
    }
 
