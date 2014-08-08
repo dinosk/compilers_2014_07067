@@ -353,7 +353,7 @@ public class KangaTranslator implements GJVisitor<String, String> {
       n.f3.accept(this, argu);
       int secondBracket = stackLocations.get(curProcedure);
 
-      System.out.println("secondBracket in "+name+" = "+secondBracket);
+      // System.out.println("secondBracket in "+name+" = "+secondBracket);
       emit(name+"\t["+argNo+"]["+secondBracket+"]["+procStats.get(curProcedure).get("tempArgs").size()+"]\n");
 
       for( String temp : registerMap.get(curProcedure).keySet()){
@@ -703,7 +703,7 @@ public class KangaTranslator implements GJVisitor<String, String> {
       }
       if(kangaTemp == null){
         if(spillStack.get(curProcedure).contains("TEMP "+tempNo)){
-          System.out.println("actually spilled one");
+          // System.out.println("actually spilled one");
           return "ALOAD v1 SPILLEDARG "+getSpillIndex("TEMP "+tempNo);
         }
         return "v0";

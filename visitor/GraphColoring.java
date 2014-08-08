@@ -48,7 +48,7 @@ public class GraphColoring{
 		    }
 		  }
 		  liveAtCall.put(method, liveTemps);
-		  System.out.println("live temps at calls in "+method+" are "+liveAtCall.get(method));
+		  // System.out.println("live temps at calls in "+method+" are "+liveAtCall.get(method));
 		}
 	}
 
@@ -138,8 +138,8 @@ public class GraphColoring{
 						if(improvementReg.contains("s")){
 							globalRegisterMap.get(method).put(temp, improvementReg);
 							availableRegs.remove(improvementReg);			
-							System.out.println("Improved "+temp+" to "+improvementReg);
-							System.out.println("Remaining regs "+availableRegs);
+							// System.out.println("Improved "+temp+" to "+improvementReg);
+							// System.out.println("Remaining regs "+availableRegs);
 							break;
 						}
 					}
